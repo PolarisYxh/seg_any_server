@@ -73,8 +73,10 @@ if __name__ == "__main__":
     from log import Setlog
     set_log = Setlog(log_path=log_path, filename='service.log', log_advance_hours=0)
     set_log.log_config()
-    
-    from handler import Handler, download_reqcode_log
-    request_handler = Handler(workingDir,bdebug,log)
-    
+    if load_dict['use_sam']:
+        from handler import Handler, download_reqcode_log
+        request_handler = Handler(workingDir,bdebug,log)
+    else:
+        from handler import Handler1, download_reqcode_log
+        request_handler = Handler1(workingDir,bdebug,log)
     app.run(host=load_dict["host"], port=int(load_dict["port"]), debug = bdebug)

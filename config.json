@@ -12,5 +12,6 @@
     "device":"cuda",
     "//":"device为cuda时，更改使用的gpu编号，device为cpu不影响",
     "gpus":"3",
-    "model_type":"vit_h"
+    "model_type":"vit_h",
+    "use_sam":false
 }

@@ -32,6 +32,53 @@ def base642cvmat(base64_data):
     nparr = np.frombuffer(imgData, np.uint8)
     img_np = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
     return img_np
+class Handler1(object):
+    def __init__(self,rFolder,bDebug,log):
+        self.log = log
+        self.log.logger.info('#########################segmentall Handler init##########################')
+        ## TODO: put own function module
+        from pytorch_hair_segmentation.interface import HairSegment
+        ## model init
+        load_dict = readjson(os.path.dirname(__file__) + "/config.json")
+        device=load_dict["device"]
+        if device=="cuda":
+            os.environ['CUDA_VISIBLE_DEVICES'] =load_dict['gpus']
+        self.app = HairSegment(device)
+        self.cache_path = os.path.join(rFolder,'cache')
+        logging.info('segmentall handler init done.')
+        self.log.logger.info('#########################segmentall Handler init done#######################')
+    def queue_callback(self, mode, json_data):
+        reqCode = json_data['reqCode']
+        self.log.logger.info(f'{reqCode}:#################Handler start#################.')
+        self.log.logger.info(f'{reqCode}: mode={mode}')
+        response_data = {'reqCode': reqCode, 'error': 0, 'errorInfo': ''}
+        try:
+            ## TODO:
+            rst = self.process(json_data)
+            # rst=json.dumps(rst,cls=MyEncoder)
+            response_data = {'reqCode': reqCode, 'masks': rst, 'error':0, 'errorInfo': ''}
+            logging.info(f'Handler successfully, reqCode: {reqCode}.')
+            os.system(f'echo \"Handler successfully\" >> cache/{reqCode}_service_log.log')
+
+        except Exception as ex:
+            response_data = {'reqCode': reqCode, 'error':-1, 'errorInfo': str(ex)}
+            logging.error(f'Handler fail ... reqCode: {reqCode} , {traceback.format_exc()}')
+            os.system(f'echo \"Handler fail ... reqCode: {reqCode} , {traceback.format_exc()}\" >> cache/{reqCode}_service_log.log')
+
+        finally:
+            logging.info(f'Handler end, reqCode: {reqCode}.')
+            return response_data
+
+    def process(self, json_data):
+        reqCode = json_data['reqCode']
+        img = base642cvmat(json_data['imgFile'])
+        # cv2.imshow("1",img)
+        # cv2.waitKey()
+        masks = self.app.get_segment(img,reqCode)
+        masks[masks>0]=1
+        masks  = masks.astype('bool')
+        return masks.tolist()
+    
 class Handler(object):
     def __init__(self,rFolder,bDebug,log):
         self.log = log
